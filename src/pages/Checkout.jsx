@@ -23,6 +23,7 @@ export default function Checkout() {
   const [error, setError] = useState("");
   const [balanceCents, setBalanceCents] = useState(null);
   const [balanceLoading, setBalanceLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const orderId = useMemo(() => makeOrderId(), []);
   const requiredCents = Math.round(totals.subtotal * 100);
@@ -98,9 +99,12 @@ export default function Checkout() {
     setError("");
   }
 
-  function submit(e) {
+  async function submit(e) {
     e.preventDefault();
 
+    if (saving) {
+      return;
+    }
     if (balanceLoading) {
       setError("Checking balance… please wait.");
       return;
@@ -120,6 +124,37 @@ export default function Checkout() {
       setError("Session ID is invalid. Please use the one provided.");
       return;
     }
+
+    setSaving(true);
+
+    // Refresh balance just before charging to avoid stale data
+    const { data: freshBalance, error: freshErr } = await supabase
+      .from("balances")
+      .select("balance_cents")
+      .eq("user_id", user.id)
+      .single();
+    const latestCents = freshErr ? effectiveBalanceCents : freshBalance?.balance_cents ?? 0;
+    if (latestCents < requiredCents) {
+      setSaving(false);
+      setError("Insufficient balance. Redirecting to add balance.");
+      nav("/add-balance", { state: { from: "/checkout" } });
+      return;
+    }
+
+    const newBalanceCents = latestCents - requiredCents;
+    const { data: updatedRow, error: updateErr } = await supabase
+      .from("balances")
+      .upsert({ user_id: user.id, balance_cents: newBalanceCents })
+      .select("balance_cents")
+      .single();
+
+    if (updateErr) {
+      setSaving(false);
+      setError("Could not deduct balance. Please try again.");
+      return;
+    }
+
+    setBalanceCents(updatedRow?.balance_cents ?? newBalanceCents);
 
     // Save mock order (localStorage for the assignment demo)
     const payload = {
@@ -141,6 +176,7 @@ export default function Checkout() {
 
     clearCart();
     nav("/confirmation");
+    setSaving(false);
   }
 
   return (
@@ -216,8 +252,12 @@ export default function Checkout() {
                 {error}
               </div>
             )}
-            <button className="btn" type="submit" disabled={balanceLoading}>
-              {hasEnoughBalance ? "Confirm order" : "Add balance first"}
+            <button className="btn" type="submit" disabled={balanceLoading || saving}>
+              {saving
+                ? "Processing…"
+                : hasEnoughBalance
+                ? "Confirm order"
+                : "Add balance first"}
             </button>
           </form>
         </div>
