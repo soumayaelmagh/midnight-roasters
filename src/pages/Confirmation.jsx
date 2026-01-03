@@ -45,12 +45,7 @@ export default function Confirmation() {
           <div className="mono">{sessionId}</div>
         </div>
 
-        <div className="notice">
-          <div className="tiny muted">Wallet address :</div>
-          <div className="mono">{order.payment.demoWalletAddress}</div>
-          <div className="tiny muted">Network: {order.payment.network}</div>
-          <div className="tiny muted">Tx hash: {order.payment.txHash}</div>
-        </div>
+        
 
         <h3>Items</h3>
         <ul className="list">
