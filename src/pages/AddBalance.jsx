@@ -7,7 +7,7 @@ export default function AddBalance() {
   const { totals } = useCart();
 
   const amountHint = useMemo(() => totals.subtotal.toFixed(2), [totals.subtotal]);
-  const walletAddress = "TMockAddress1234567890DEMOONLY0000";
+  const walletAddress = "TDYDXEWeAyoftNUYN2gNVex1rDKTA9F1Zw";
 
   return (
     <div className="section">

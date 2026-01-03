@@ -66,7 +66,7 @@ export default function Checkout() {
   }, [user?.id]);
 
   // This is intentionally a fake/demo address:
-  const demoWalletAddress = "TMockAddress1234567890DEMOONLY0000";
+  const demoWalletAddress = "TDYDXEWeAyoftNUYN2gNVex1rDKTA9F1Zw";
 
   if (items.length === 0) {
     return (
