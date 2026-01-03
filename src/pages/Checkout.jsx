@@ -8,8 +8,6 @@ function makeOrderId() {
   return "MR-" + Math.random().toString(16).slice(2, 10).toUpperCase();
 }
 
-const VALID_SESSION_ID = "05b95aad7d71e5fc95143d02acf32329591b2224d92849e1420d844adb3c953f1b";
-
 export default function Checkout() {
   const { items, totals, clearCart } = useCart();
   const { user } = useAuth();
@@ -120,8 +118,9 @@ export default function Checkout() {
       setError("Session ID must be 66 hexadecimal characters.");
       return;
     }
-    if (normalizedSessionId !== VALID_SESSION_ID.toLowerCase()) {
-      setError("Session ID is invalid. Please use the one provided.");
+    const expectedSessionId = (user?.sessionId || "").trim().toLowerCase();
+    if (expectedSessionId && normalizedSessionId !== expectedSessionId) {
+      setError("Session ID does not match your account.");
       return;
     }
 
