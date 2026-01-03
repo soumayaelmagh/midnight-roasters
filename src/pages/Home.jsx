@@ -15,7 +15,7 @@ export default function Home() {
           </p>
           <div className="row">
             <Link to="/shop" className="btn">Browse Roasts</Link>
-            <a href="#how" className="btn ghost">How it works</a>
+          
           </div>
         </div>
 
