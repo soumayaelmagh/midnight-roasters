@@ -67,7 +67,7 @@ export default function Checkout() {
   }, [user?.id]);
 
   // This is intentionally a fake/demo address:
-  const demoWalletAddress = "TDYDXEWeAyoftNUYN2gNVex1rDKTA9F1Zw";
+  const demoWalletAddress = "TMockAddress1234567890DEMOONLY0000";
 
   if (items.length === 0) {
     return (
@@ -171,6 +171,21 @@ export default function Checkout() {
       items,
       totals,
     };
+
+    const { error: orderErr } = await supabase.from("orders").insert({
+      order_id: orderId,
+      user_id: user.id,
+      session_id: normalizedSessionId,
+      items,
+      totals,
+      payment: payload.payment,
+    });
+
+    if (orderErr) {
+      setSaving(false);
+      setError(orderErr.message || "Could not save order. Please try again.");
+      return;
+    }
 
     localStorage.setItem("midnight_roasters_last_order", JSON.stringify(payload));
 
