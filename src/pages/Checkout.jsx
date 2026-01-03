@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
+import { supabase } from "../lib/supabase.js";
 
 function makeOrderId() {
   return "MR-" + Math.random().toString(16).slice(2, 10).toUpperCase();
@@ -20,8 +21,13 @@ export default function Checkout() {
     txHash: "",
   });
   const [error, setError] = useState("");
+  const [balanceCents, setBalanceCents] = useState(null);
+  const [balanceLoading, setBalanceLoading] = useState(false);
 
   const orderId = useMemo(() => makeOrderId(), []);
+  const requiredCents = Math.round(totals.subtotal * 100);
+  const effectiveBalanceCents = balanceCents ?? 0;
+  const hasEnoughBalance = effectiveBalanceCents >= requiredCents;
 
   useEffect(() => {
     if (user?.sessionId) {
@@ -31,6 +37,33 @@ export default function Checkout() {
       );
     }
   }, [user?.sessionId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadBalance() {
+      if (!user?.id) {
+        setBalanceCents(null);
+        return;
+      }
+      setBalanceLoading(true);
+      const { data, error: err } = await supabase
+        .from("balances")
+        .select("balance_cents")
+        .eq("user_id", user.id)
+        .single();
+      if (cancelled) return;
+      if (!err && data) {
+        setBalanceCents(data.balance_cents);
+      } else {
+        setBalanceCents(0);
+      }
+      setBalanceLoading(false);
+    }
+    loadBalance();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
 
   // This is intentionally a fake/demo address:
   const demoWalletAddress = "TMockAddress1234567890DEMOONLY0000";
@@ -67,6 +100,16 @@ export default function Checkout() {
 
   function submit(e) {
     e.preventDefault();
+
+    if (balanceLoading) {
+      setError("Checking balance… please wait.");
+      return;
+    }
+    if (!hasEnoughBalance) {
+      setError("Insufficient balance. Redirecting to add balance.");
+      nav("/add-balance", { state: { from: "/checkout" } });
+      return;
+    }
 
     const normalizedSessionId = form.sessionId.trim().toLowerCase();
     if (!/^[a-f0-9]{66}$/.test(normalizedSessionId)) {
@@ -115,6 +158,33 @@ export default function Checkout() {
           </div>
 
           <div className="notice">
+            <div className="tiny muted">Balance</div>
+            <div className="row space">
+              <div className="mono">
+                {balanceLoading
+                  ? "Checking…"
+                  : balanceCents === null
+                  ? "—"
+                  : `$${(balanceCents / 100).toFixed(2)}`}
+              </div>
+              {!hasEnoughBalance && !balanceLoading && (
+                <button
+                  className="btn ghost"
+                  type="button"
+                  onClick={() => nav("/add-balance", { state: { from: "/checkout" } })}
+                >
+                  Add balance
+                </button>
+              )}
+            </div>
+            {!hasEnoughBalance && !balanceLoading && (
+              <div className="note" style={{ color: "var(--accent)" }}>
+                Not enough balance. Please top up before confirming.
+              </div>
+            )}
+          </div>
+
+          <div className="notice">
             <div className="tiny muted">Send to address :</div>
             <div className="mono">{demoWalletAddress}</div>
             <div className="tiny muted">Network: TRC20</div>
@@ -146,8 +216,8 @@ export default function Checkout() {
                 {error}
               </div>
             )}
-            <button className="btn" type="submit">
-              Confirm order
+            <button className="btn" type="submit" disabled={balanceLoading}>
+              {hasEnoughBalance ? "Confirm order" : "Add balance first"}
             </button>
           </form>
         </div>
