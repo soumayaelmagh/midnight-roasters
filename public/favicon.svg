@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Midnight Roasters">
+  <rect width="64" height="64" rx="12" fill="#120a06" />
+  <ellipse cx="26" cy="32" rx="14" ry="20" fill="#6b3b1d" />
+  <ellipse cx="38" cy="32" rx="14" ry="20" fill="#4a2614" />
+  <path d="M32 14c-3 6-3 30 0 36" stroke="#e6d2b5" stroke-width="3" stroke-linecap="round" />
+</svg>
